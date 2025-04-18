@@ -2,129 +2,328 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Интернет-магазин</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Мелочь - Интернет-магазин</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-    table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 0 10px #ccc; }
-    th, td { border: 1px solid #ccc; padding: 12px; text-align: center; }
-    th { background-color: #eee; }
-    img { max-width: 100px; height: auto; }
-    input[type="number"] { width: 60px; }
-    .order-form { margin-top: 20px; background: white; padding: 20px; box-shadow: 0 0 10px #ccc; }
-    .order-form input, .order-form button, textarea { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
-    .order-form button { background: #28a745; color: white; border: none; cursor: pointer; }
-    .cart-item { margin-bottom: 8px; }
-    .remove-btn { color: red; cursor: pointer; margin-left: 10px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Arial', sans-serif; background: #f4f4f4; padding: 20px; color: #333; }
+    h1, h2 { text-align: center; margin-bottom: 20px; animation: fadeIn 1s ease forwards; }
+
+    input, select, button, textarea {
+      font-size: 1rem;
+      padding: 10px;
+      margin: 10px auto;
+      width: 100%;
+      max-width: 400px;
+      display: block;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .cart-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+    button {
+      background: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover { background: #218838; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      background: white;
+      box-shadow: 0 0 10px #ccc;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+    th { background: #f8f8f8; }
+
+    .product-img { max-width: 60px; height: auto; transition: transform 0.3s ease; }
+    .product-img:hover { transform: scale(1.1); }
+
+    .cart-summary { text-align: center; font-weight: bold; margin: 10px 0; }
+    .order-form, #orderHistory { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px #ccc; margin-top: 20px; }
+
+    .delete-order {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      margin-top: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .delete-order:hover {
+      background: #c82333;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Новая анимация для добавления в корзину */
+    @keyframes addToCart {
+      0% { transform: scale(1); background-color: #28a745; }
+      50% { transform: scale(1.2); background-color: #218838; }
+      100% { transform: scale(1); background-color: #28a745; }
+    }
+    .animate-add {
+      animation: addToCart 0.5s ease;
+    }
+
+    @media (max-width: 600px) {
+      th, td { font-size: 12px; padding: 6px; }
+      input, select, button, textarea { font-size: 0.9rem; padding: 8px; }
+      .cart-summary { font-size: 1.2rem; }
+      #cartList div { font-size: 0.9rem; }
+      .order-form input, .order-form button { width: 90%; }
+    }
   </style>
+
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
+  <h1>Мелочь - Каталог товаров</h1>
 
-<h1>Каталог товаров</h1>
+  <input type="text" id="search" placeholder="Поиск товара..." />
+  <select id="sort">
+    <option value="">Сортировка по цене</option>
+    <option value="asc">Сначала дешёвые</option>
+    <option value="desc">Сначала дорогие</option>
+  </select>
 
-<form id="orderForm">
   <table>
     <thead>
-      <tr>
-        <th>Фото</th>
-        <th>Название</th>
-        <th>Цена</th>
-        <th>Количество</th>
-        <th>Заказать</th>
-      </tr>
+      <tr><th>Фото</th><th>Название</th><th>Цена</th><th>Кол-во</th><th>Добавить</th></tr>
     </thead>
-    <tbody>
-      <tr>
-        <td><img src="images/kusachka.jpg" alt="Виктор-4" /></td>
-        <td>Виктор-4</td>
-        <td>500 ₽</td>
-        <td><input type="number" min="1" value="1" /></td>
-        <td><button type="button" onclick="addToCart('Виктор-4', 500, this)">+</button></td>
-      </tr>
-    </tbody>
+    <tbody id="productTable"></tbody>
   </table>
 
   <div class="order-form">
     <h2>Оформить заказ</h2>
+    <div id="cartList"></div>
+    <div class="cart-summary">Итого: <span id="totalSum">0</span> с</div>
+    <button id="clearCart">Очистить корзину</button>
     <input type="text" id="name" placeholder="Ваше имя" required />
     <input type="tel" id="phone" placeholder="Телефон" required />
     <input type="text" id="address" placeholder="Адрес доставки" required />
-    <div id="cartList"></div>
-    <textarea id="cartText" readonly placeholder="Корзина..."></textarea>
-    <button type="submit">Отправить заказ</button>
+    <button id="submitOrder">Отправить заказ</button>
   </div>
-</form>
 
-<script>
-  const telegramBotToken = '7960727448:AAF0B2mizrzj7sjHP68n-1IcjLoNc6kwVkE';
-  const chatId = '5567924440';
-  const cartItems = [];
+  <button id="toggleHistory">История заказов</button>
+  <div id="orderHistory" style="display:none">
+    <h2>История заказов</h2>
+    <ul id="historyList"></ul>
+  </div>
 
-  function addToCart(title, price, button) {
-    const row = button.closest('tr');
-    const qty = parseInt(row.querySelector('input[type="number"]').value);
-    const id = Date.now();
+  <script>
+    const products = [
+      { title: 'шотка(3361)', price: 40, image: 'шотка120.jpg' },
+      { title: 'шотка(106)', price: 40, image: 'шотка106.jpg' },
+      { title: 'шотка(3369)', price: 50, image: 'шотка авалный.jpg' },
+      { title: 'шотка(80)', price: 55, image: 'шотка80.jpg' },
+      { title: 'шотка(0058)', price: 25, image: 'шотка0058.jpg' },
+      { title: 'обув шотка', price: 20, image: 'обувшотка.jpg' },
+      { title: 'обув шотка руч', price: 20, image: 'обувшоткаруч.jpg' },
+      { title: 'шотка для одежды', price: 100, image: 'шоткаодежды.jpg' },
+      { title: 'шоткка для одежды', price: 45, image: '0019.jpg' },
+      { title: 'обув шотка', price: 35, image: 'обувшотжел.jpg' },
+      { title: 'обув шотка маль', price: 20, image: 'обувшотжелмал.jpg' },
+      { title: 'рассия терка', price: 180, image: 'рустеркакрас.jpg' },
+      { title: 'рассия терка жел', price: 170, image: 'рустеркажел.jpg' }
+    ];
 
-    const item = {
-      id,
-      title,
-      price,
-      qty,
-      total: price * qty
+    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+    const productTable = document.getElementById('productTable');
+    const search = document.getElementById('search');
+    const sort = document.getElementById('sort');
+    const cartList = document.getElementById('cartList');
+    const totalSum = document.getElementById('totalSum');
+
+    function renderProducts() {
+      let filtered = [...products];
+      if (search.value) {
+        filtered = filtered.filter(p => p.title.toLowerCase().includes(search.value.toLowerCase()));
+      }
+      if (sort.value) {
+        filtered.sort((a, b) => sort.value === 'asc' ? a.price - b.price : b.price - a.price);
+      }
+      productTable.innerHTML = '';
+      filtered.forEach(p => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><img src="${p.image}" class="product-img" alt="${p.title}"/></td>
+          <td>${p.title}</td>
+          <td>${p.price}</td>
+          <td><input type="number" min="1" value="1" /></td>
+          <td><button onclick="addToCart('${p.title}', ${p.price}, '${p.image}', this)">добавить</button></td>
+        `;
+        productTable.appendChild(row);
+      });
+    }
+
+    function addToCart(title, price, image, btn) {
+      const qty = +btn.parentElement.parentElement.querySelector('input').value;
+      const index = cart.findIndex(item => item.title === title);
+      if (index !== -1) cart[index].qty += qty;
+      else cart.push({ title, price, qty });
+      updateCart();
+
+      // Анимация кнопки
+      btn.classList.add('animate-add');
+      setTimeout(() => btn.classList.remove('animate-add'), 500);
+
+      // Сохраняем корзину в localStorage
+      localStorage.setItem('cart', JSON.stringify(cart));
+    }
+
+    function updateCart() {
+      cartList.innerHTML = '';
+      let total = 0;
+      cart.forEach((item, i) => {
+        total += item.qty * item.price;
+        const div = document.createElement('div');
+div.classList.add('cart-item');
+div.innerHTML = `
+  <span style="flex-grow:1;">${item.title} — ${item.qty} × ${item.price}c = ${item.qty * item.price}c</span>
+  <button onclick="removeFromCart(${i})" style="margin-left:10px;">&times;</button>
+`;
+cartList.appendChild(div);
+
+      });
+      totalSum.textContent = total;
+
+      // Сохраняем корзину
+      localStorage.setItem('cart', JSON.stringify(cart));
+    }
+
+    function removeFromCart(i) {
+      cart.splice(i, 1);
+      updateCart();
+    }
+
+    document.getElementById('submitOrder').onclick = () => {
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const address = document.getElementById('address').value.trim();
+  if (!name || !phone || !address || cart.length === 0) {
+    Swal.fire('Ошибка', 'Заполните все поля и добавьте товары', 'warning');
+    return;
+  }
+  const items = cart.map(i => `${i.title} — ${i.qty}×${i.price}c`).join('\n');
+  const total = cart.reduce((sum, item) => sum + item.qty * item.price, 0);
+  const msg = `Новый заказ:\nИмя: ${name}\nТелефон: ${phone}\nАдрес: ${address}\nТовары:\n${items}\n\nИтого: ${total}c`;
+  
+  fetch('https://api.telegram.org/bot7960727448:AAF0B2mizrzj7sjHP68n-1IcjLoNc6kwVkE/sendMessage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: '5567924440', text: msg })
+  }).then(r => {
+    if (r.ok) {
+      Swal.fire('Успех!', 'Ваш заказ отправлен!', 'success');
+      cart.length = 0;
+      updateCart();
+      localStorage.removeItem('cart');
+      document.getElementById('name').value = '';
+      document.getElementById('phone').value = '';
+      document.getElementById('address').value = '';
+    } else {
+      Swal.fire('Ошибка', 'Не удалось отправить заказ. Попробуйте позже.', 'error');
+    }
+  }).catch(error => {
+    console.error(error);
+    Swal.fire('Ошибка', 'Не удалось отправить заказ. Проверьте подключение к интернету.', 'error');
+  });
+};
+
+      const items = cart.map(i => `${i.title} — ${i.qty}×${i.price}c`).join('\n');
+      const total = cart.reduce((sum, item) => sum + item.qty * item.price, 0);
+
+      const msg = `Новый заказ:
+Имя: ${name}
+Телефон: ${phone}
+Адрес: ${address}
+Товары:
+${items}
+
+Итого: ${total}c`;
+
+      fetch('https://api.telegram.org/bot<ТВОЙ_ТОКЕН>/sendMessage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: '<ТВОЙ_CHAT_ID>', text: msg })
+      }).then(r => {
+        if (r.ok) {
+          Swal.fire('Успех!', 'Ваш заказ отправлен!', 'success');
+          cart.length = 0;
+          updateCart();
+          localStorage.removeItem('cart');
+          document.getElementById('name').value = '';
+          document.getElementById('phone').value = '';
+          document.getElementById('address').value = '';
+        } else {
+          Swal.fire('Ошибка', 'Не удалось отправить заказ. Попробуйте позже.', 'error');
+        }
+      });
+    ;
+
+    function deleteOrder(index) {
+      let history = JSON.parse(localStorage.getItem('orderHistory') || '[]');
+      history.splice(index, 1);
+      localStorage.setItem('orderHistory', JSON.stringify(history));
+      document.getElementById('toggleHistory').click();
+      document.getElementById('toggleHistory').click();
+    }
+
+    document.getElementById('toggleHistory').onclick = () => {
+      const hist = document.getElementById('orderHistory');
+      hist.style.display = hist.style.display === 'none' ? 'block' : 'none';
+
+      const history = JSON.parse(localStorage.getItem('orderHistory') || '[]');
+      const list = document.getElementById('historyList');
+      list.innerHTML = '';
+
+      if (history.length === 0) {
+        list.innerHTML = '<li>История заказов пуста.</li>';
+        return;
+      }
+
+      history.forEach((o, index) => {
+        const li = document.createElement('li');
+        const itemsText = o.items.map(i => `${i.title} × ${i.qty}`).join(', ');
+        li.innerHTML = `
+          <strong>Заказ от: ${o.time}</strong>
+          <p>Имя: ${o.name}</p>
+          <p>Телефон: ${o.phone}</p>
+          <p>Адрес: ${o.address}</p>
+          <p>Товары: ${itemsText}</p>
+          <p><strong>Итого: ${o.total}c</strong></p>
+          <button class="delete-order" onclick="deleteOrder(${index})">Удалить</button>
+        `;
+        list.appendChild(li);
+      });
     };
 
-    cartItems.push(item);
-    updateCartDisplay();
-  }
-
-  function removeFromCart(id) {
-    const index = cartItems.findIndex(item => item.id === id);
-    if (index > -1) {
-      cartItems.splice(index, 1);
-      updateCartDisplay();
-    }
-  }
-
-  function updateCartDisplay() {
-    const cartList = document.getElementById('cartList');
-    const cartText = document.getElementById('cartText');
-    cartList.innerHTML = '';
-    cartText.value = '';
-
-    cartItems.forEach(item => {
-      const div = document.createElement('div');
-      div.className = 'cart-item';
-      div.innerHTML = `${item.title} — ${item.qty} шт. x ${item.price}₽ = ${item.total}₽
-        <span class="remove-btn" onclick="removeFromCart(${item.id})">×</span>`;
-      cartList.appendChild(div);
-      cartText.value += `${item.title} — ${item.qty} шт. x ${item.price}₽ = ${item.total}₽\n`;
-    });
-  }
-
-  document.getElementById('orderForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const name = document.getElementById('name').value;
-    const phone = document.getElementById('phone').value;
-    const address = document.getElementById('address').value;
-    const text = document.getElementById('cartText').value;
-
-    const message = `Новый заказ:\nИмя: ${name}\nТелефон: ${phone}\nАдрес: ${address}\nТовары:\n${text}`;
-
-    fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ chat_id: chatId, text: message })
-    }).then(response => {
-      if (response.ok) {
-        alert('Заказ отправлен!');
-        cartItems.length = 0;
-        updateCartDisplay();
-        document.getElementById('orderForm').reset();
-      } else {
-        alert('Ошибка при отправке.');
-      }
-    });
-  });
-</script>
-
+    search.oninput = renderProducts;
+    sort.onchange = renderProducts;
+    renderProducts();
+    updateCart();
+  </script>
 </body>
 </html>
+
